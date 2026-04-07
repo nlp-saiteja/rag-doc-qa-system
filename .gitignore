@@ -1,0 +1,36 @@
+# Virtual Environment
+venv/
+
+# Environment Variables (NEVER commit this — it has your secret tokens)
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# FAISS index (can be regenerated)
+vector_store/*.faiss
+vector_store/*.pkl
+
+# Uploaded documents
+data/uploads/*
+!data/uploads/.gitkeep
+
+# MLflow artifacts
+mlflow_tracking/
+
+# Logs
+logs/*.log
+
+# Claude Code
+.claude/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

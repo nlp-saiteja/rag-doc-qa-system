@@ -1,0 +1,160 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT THIS FILE IS:
+#   Docker Compose lets you define and run MULTIPLE containers together
+#   as one application — with one command: "docker-compose up"
+#
+# OUR SERVICES:
+#   backend  → FastAPI server  (port 8000) — the AI brain
+#   frontend → Streamlit UI    (port 8501) — the web interface
+#   mlflow   → MLflow UI       (port 5000) — the experiment dashboard
+#
+# HOW SERVICES TALK TO EACH OTHER:
+#   Docker Compose creates a private network between services.
+#   The frontend calls "http://backend:8000" (not localhost:8000)
+#   because inside Docker, each service is reachable by its service name.
+#
+# HOW TO USE:
+#   Start all:    docker-compose up
+#   Start one:    docker-compose up backend
+#   Stop all:     docker-compose down
+#   View logs:    docker-compose logs -f backend
+#   Rebuild:      docker-compose up --build
+# ─────────────────────────────────────────────────────────────────────────────
+
+# version field removed — not needed in modern Docker Compose
+
+# ── Shared Volume Definitions ─────────────────────────────────────────────────
+# Named volumes persist data between container restarts.
+# Without volumes, all data (uploaded PDFs, FAISS index) would be lost
+# every time you restart the container.
+volumes:
+  vector_store_data:   # Stores the FAISS index files
+  uploads_data:        # Stores uploaded PDF files
+  mlflow_data:         # Stores MLflow experiment data
+
+
+# ── Services ──────────────────────────────────────────────────────────────────
+services:
+
+  # ── Service 1: FastAPI Backend ──────────────────────────────────────────────
+  backend:
+    # build: tells Docker Compose to BUILD the image from our Dockerfile
+    # context: the folder to use as the build context (where Dockerfile is)
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # container_name: gives the container a predictable name
+    container_name: rag-backend
+
+    # ports: maps host_port:container_port
+    # "8000:8000" means: when you visit localhost:8000 on your Mac,
+    # Docker forwards it to port 8000 inside the container
+    ports:
+      - "8000:8000"
+
+    # volumes: mounts named volumes into the container
+    # named_volume:container_path
+    # Changes inside these paths persist after container restarts
+    volumes:
+      - vector_store_data:/app/vector_store
+      - uploads_data:/app/data/uploads
+      - mlflow_data:/app/mlflow_tracking
+      - ./logs:/app/logs          # Bind mount: logs folder on your Mac
+
+    # env_file: loads environment variables from .env
+    # This is how the container gets your HUGGINGFACE_API_TOKEN etc.
+    env_file:
+      - .env
+
+    # environment: override or add specific env variables
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - PYTHONPATH=/app
+
+    # restart: what to do if the container crashes
+    # "unless-stopped" = always restart, except when you manually stop it
+    restart: unless-stopped
+
+    # healthcheck: Docker monitors this to know if the service is ready
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s       # Check every 30 seconds
+      timeout: 10s        # Give up after 10 seconds
+      retries: 3          # Mark unhealthy after 3 failures
+      start_period: 90s   # Wait 90s before first check (model loading time)
+
+
+  # ── Service 2: Streamlit Frontend ──────────────────────────────────────────
+  frontend:
+    # We build the frontend from the same Dockerfile but override the CMD
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: rag-frontend
+
+    ports:
+      - "8501:8501"
+
+    # Override the default CMD from the Dockerfile
+    # The backend's CMD runs uvicorn — we override that with streamlit here
+    command: >
+      streamlit run app/frontend/streamlit_app.py
+      --server.port 8501
+      --server.address 0.0.0.0
+      --server.headless true
+
+    environment:
+      - PYTHONPATH=/app
+      # IMPORTANT: Inside Docker, the frontend reaches the backend
+      # via the service name "backend" (not "localhost")
+      # This env var tells our streamlit app where the API lives
+      - API_BASE_URL=http://backend:8000
+
+    # depends_on: ensures backend starts before frontend
+    # "healthy" means wait until backend's healthcheck passes
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    volumes:
+      - ./logs:/app/logs
+
+
+  # ── Service 3: MLflow UI ────────────────────────────────────────────────────
+  mlflow:
+    # Build from the same image as backend (already has mlflow installed)
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: rag-mlflow
+
+    ports:
+      - "5000:5000"
+
+    # Override CMD: create dir then launch mlflow UI
+    command: >
+      bash -c "mkdir -p /app/mlflow_tracking &&
+               mlflow ui
+               --backend-store-uri /app/mlflow_tracking
+               --host 0.0.0.0
+               --port 5000
+               --serve-artifacts"
+
+    volumes:
+      - mlflow_data:/app/mlflow_tracking
+
+    environment:
+      - PYTHONPATH=/app
+
+    restart: unless-stopped
+
+    depends_on:
+      - backend

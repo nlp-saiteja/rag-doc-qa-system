@@ -1,0 +1,34 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+# Don't copy the virtual environment into the image.
+# Docker installs packages fresh from requirements.txt inside the container.
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── Claude Code ───────────────────────────────────────────────────────────────
+.claude/
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+
+# ── Logs (regenerated at runtime) ─────────────────────────────────────────────
+logs/
+
+# ── FAISS index (rebuilt at runtime from uploaded docs) ───────────────────────
+vector_store/*.faiss
+vector_store/*.pkl
+
+# ── MLflow data (mounted as a volume) ─────────────────────────────────────────
+mlflow_tracking/
+
+# ── Evaluation results (generated at runtime) ─────────────────────────────────
+evaluation/results/
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
