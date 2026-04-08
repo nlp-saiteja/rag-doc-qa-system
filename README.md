@@ -1,5 +1,7 @@
 # RAG-Powered Intelligent Document Q&A System
 
+*By Leela Phanidhar Sai Teja Nalanagula*
+
 A production-grade **Retrieval-Augmented Generation (RAG)** system that lets you upload any document and ask questions about it in plain English — with cited answers telling you exactly which page the answer came from.
 
 Built entirely with **free, open-source tools** that run locally on your machine. No OpenAI API key needed.
