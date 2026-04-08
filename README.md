@@ -146,7 +146,7 @@ Step 4 — Return
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/rag-doc-qa-system.git
+git clone https://github.com/nlp-saiteja/rag-doc-qa-system.git
 cd rag-doc-qa-system
 
 # 2. Create and activate virtual environment
@@ -179,7 +179,7 @@ Open **http://localhost:8501** in your browser.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/rag-doc-qa-system.git
+git clone https://github.com/nlp-saiteja/rag-doc-qa-system.git
 cd rag-doc-qa-system
 
 # 2. Add your HuggingFace token
