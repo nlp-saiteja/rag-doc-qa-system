@@ -325,10 +325,3 @@ MLFLOW_TRACKING_URI=./mlflow_tracking
 
 ---
 
-## License
-
-MIT License — free to use, modify, and distribute.
-
----
-
-*Built from scratch as a portfolio project demonstrating production-grade RAG system design.*
